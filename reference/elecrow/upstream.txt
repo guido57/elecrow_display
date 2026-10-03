@@ -1,0 +1,3 @@
+origin	https://github.com/Elecrow-RD/CrowPanel-Advanced-10.1inch-ESP32-P4-HMI-AI-Display-1024x600-IPS-Touch-Screen.git (fetch)
+origin	https://github.com/Elecrow-RD/CrowPanel-Advanced-10.1inch-ESP32-P4-HMI-AI-Display-1024x600-IPS-Touch-Screen.git (push)
+24e4398047c224cbb85b4798be40bea2fc8aba5b
