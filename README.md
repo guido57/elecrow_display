@@ -18,6 +18,34 @@ The display acts as a client for a Raspberry Pi thermostat service and Home Assi
 
 Sensor polling runs in a background FreeRTOS task, with a five-second delay between polling cycles. The actual interval also includes network request time.
 
+## GUI gallery
+
+Photos of the dashboard running on the CrowPanel. Readings and schedules shown are examples from the running installation.
+
+### Home thermostat
+
+Room temperature, four schedule periods, operating mode buttons, and the manual setpoint slider.
+
+<img src="docs/images/home-thermostat.jpg" alt="CrowPanel Home Thermostat page with temperature gauge, schedules, mode buttons, and manual setpoint" width="600">
+
+### Schedule editor
+
+Editing the Evening period's temperature and start/end times, with Save and Cancel controls.
+
+<img src="docs/images/schedule-editor.jpg" alt="Evening schedule editor showing temperature slider and start and end time rollers" width="600">
+
+### Garden
+
+Temperature and humidity readings from Home Assistant, with the thermostat's boiler status below.
+
+<img src="docs/images/garden.jpg" alt="Garden page displaying temperature and humidity gauges and boiler status" width="600">
+
+### Settings
+
+Wi-Fi connection diagnostics and the screen brightness slider.
+
+<img src="docs/images/settings.jpg" alt="Settings page displaying Wi-Fi diagnostics and screen brightness control" width="600">
+
 ## Hardware and software
 
 - Elecrow CrowPanel Advance-P4 with ESP32-P4 and onboard ESP32-C6 Wi-Fi coprocessor.
