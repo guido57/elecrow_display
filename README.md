@@ -4,6 +4,17 @@ Touchscreen thermostat dashboard for the Elecrow CrowPanel Advance-P4 (1024 × 6
 
 The display acts as a client for a Raspberry Pi thermostat service and Home Assistant. The Raspberry Pi provides the room temperature, heating state, operating mode, and schedule; Home Assistant provides the garden temperature and humidity. Heating decisions belong to the thermostat service.
 
+```mermaid
+flowchart LR
+    R["Raspberry Pi thermostat service<br/>Makes heating decisions"]
+    D["Elecrow display<br/>Touchscreen client"]
+    H["Home Assistant"]
+
+    R -->|Room temperature, heating state, mode, schedule| D
+    D -->|Mode, setpoint, schedule changes| R
+    H -->|Garden temperature and humidity| D
+```
+
 ## Features
 
 - Room temperature, garden temperature, and humidity gauges.
