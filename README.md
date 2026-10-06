@@ -49,7 +49,7 @@ Editing the Evening period's temperature and start/end times, with Save and Canc
 
 Temperature and humidity readings from Home Assistant, with the thermostat's boiler status below.
 
-<img src="docs/images/garden-front.jpg" alt="Front view of the CrowPanel displaying Garden temperature and humidity gauges and boiler status" width="600">
+<img src="docs/images/garden-front-clean.png" alt="Front view of the CrowPanel displaying Garden temperature and humidity gauges and boiler status" width="600">
 
 Rear view of the display enclosure and its stand.
 
