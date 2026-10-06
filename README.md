@@ -37,25 +37,29 @@ Photos of the dashboard running on the CrowPanel. Readings and schedules shown a
 
 Room temperature, four schedule periods, operating mode buttons, and the manual setpoint slider.
 
-<img src="docs/images/home-thermostat.jpg" alt="CrowPanel Home Thermostat page with temperature gauge, schedules, mode buttons, and manual setpoint" width="600">
+<img src="docs/images/home-thermostat.png" alt="CrowPanel Home Thermostat page with temperature gauge, schedules, mode buttons, and manual setpoint" width="600">
 
 ### Schedule editor
 
 Editing the Evening period's temperature and start/end times, with Save and Cancel controls.
 
-<img src="docs/images/schedule-editor.jpg" alt="Evening schedule editor showing temperature slider and start and end time rollers" width="600">
+<img src="docs/images/schedule-editor.png" alt="Evening schedule editor showing temperature slider and start and end time rollers" width="600">
 
 ### Garden
 
 Temperature and humidity readings from Home Assistant, with the thermostat's boiler status below.
 
-<img src="docs/images/garden.jpg" alt="Garden page displaying temperature and humidity gauges and boiler status" width="600">
+<img src="docs/images/garden-front.jpg" alt="Front view of the CrowPanel displaying Garden temperature and humidity gauges and boiler status" width="600">
+
+Rear view of the display enclosure and its stand.
+
+<img src="docs/images/garden-rear.jpg" alt="Rear view of the CrowPanel enclosure with its support stand" width="600">
 
 ### Settings
 
 Wi-Fi connection diagnostics and the screen brightness slider.
 
-<img src="docs/images/settings.jpg" alt="Settings page displaying Wi-Fi diagnostics and screen brightness control" width="600">
+<img src="docs/images/settings.png" alt="Settings page displaying Wi-Fi diagnostics and screen brightness control" width="600">
 
 ## Hardware and software
 
