@@ -53,7 +53,7 @@ Temperature and humidity readings from Home Assistant, with the thermostat's boi
 
 Rear view of the display enclosure and its stand.
 
-<img src="docs/images/garden-rear.jpg" alt="Rear view of the CrowPanel enclosure with its support stand" width="600">
+<img src="docs/images/garden-rear-corrected.png" alt="Rear view of the CrowPanel enclosure with its support stand" width="600">
 
 ### Settings
 
