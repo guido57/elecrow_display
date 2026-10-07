@@ -25,6 +25,8 @@
 #include <ArduinoJson.h>
 #include "ani_flame.h"
 #include <Preferences.h>
+#include <time.h>
+#include "night_period.h"
 #include <WiFi.h>
 #include <string.h>         // C string lib
 #include <esp_log.h>        // ESP-IDF logging library
@@ -133,14 +135,62 @@ static void resetC6();
 static constexpr uint8_t BRIGHTNESS_MIN = 5;
 static constexpr uint8_t BRIGHTNESS_MAX = 100;
 static constexpr uint8_t BRIGHTNESS_DEFAULT = 100;
+// POSIX timezone for Europe/Rome, including automatic summer time.
+static constexpr const char *DISPLAY_TIMEZONE = "CET-1CEST,M3.5.0,M10.5.0/3";
+static uint8_t daytime_brightness = BRIGHTNESS_DEFAULT;
+static uint8_t applied_brightness = 0;
+static bool night_enabled = true;
+static uint16_t night_start = 23 * 60;
+static uint16_t night_end = 7 * 60;
+static lv_obj_t *night_status_label = nullptr;
+static lv_obj_t *night_switch = nullptr;
+static lv_obj_t *night_time_rollers[4] = {};
+
+// Called only with the LVGL lock held, or from LVGL callbacks/timers.
+static void update_display_brightness()
+{
+    const time_t now = time(nullptr);
+    const bool clock_ready = now >= 1704067200; // Reject an unsynchronized boot clock.
+    struct tm local_time = {};
+    const bool have_time = clock_ready && localtime_r(&now, &local_time) != nullptr;
+    const uint16_t minute = local_time.tm_hour * 60 + local_time.tm_min;
+    const bool night_active = night_enabled && have_time &&
+        night_period_contains(minute, night_start, night_end);
+    const uint8_t brightness = night_active ? BRIGHTNESS_MIN : daytime_brightness;
+    if (brightness != applied_brightness && board != nullptr && board->getBacklight() != nullptr) {
+        board->getBacklight()->setBrightness(brightness);
+        applied_brightness = brightness;
+    }
+    lv_label_set_text_fmt(brightness_label, "Daytime brightness: %u%% (now %u%%)", daytime_brightness, brightness);
+    if (!night_enabled) {
+        lv_label_set_text(night_status_label, "Night dimming disabled");
+    } else if (night_start == night_end) {
+        lv_label_set_text(night_status_label, "Choose different start and end times");
+    } else if (!have_time) {
+        lv_label_set_text(night_status_label, "Waiting for clock synchronization...");
+    } else {
+        lv_label_set_text_fmt(night_status_label, "%02d:%02d - %s (Rome time)",
+            local_time.tm_hour, local_time.tm_min,
+            night_active ? "Night brightness: 5%" : "Daytime brightness active");
+    }
+}
 static void brightness_slider_event(lv_event_t *e)
 {
-    const uint8_t brightness = static_cast<uint8_t>(lv_slider_get_value(static_cast<lv_obj_t *>(lv_event_get_target(e))));
-    if (board != nullptr && board->getBacklight() != nullptr) {
-        board->getBacklight()->setBrightness(brightness);
-    }
-    brightness_preferences.putUChar("level", brightness);
-    lv_label_set_text_fmt(brightness_label, "Screen brightness: %u%%", brightness);
+    daytime_brightness = static_cast<uint8_t>(lv_slider_get_value(static_cast<lv_obj_t *>(lv_event_get_target(e))));
+    brightness_preferences.putUChar("level", daytime_brightness);
+    update_display_brightness();
+}
+static void night_settings_event(lv_event_t *)
+{
+    night_enabled = lv_obj_has_state(night_switch, LV_STATE_CHECKED);
+    night_start = lv_roller_get_selected(night_time_rollers[0]) * 60 +
+        lv_roller_get_selected(night_time_rollers[1]) * 15;
+    night_end = lv_roller_get_selected(night_time_rollers[2]) * 60 +
+        lv_roller_get_selected(night_time_rollers[3]) * 15;
+    brightness_preferences.putBool("night_on", night_enabled);
+    brightness_preferences.putUShort("night_start", night_start);
+    brightness_preferences.putUShort("night_end", night_end);
+    update_display_brightness();
 }
 static void update_wifi_diagnostics_locked()
 {
@@ -605,21 +655,58 @@ static void create_sensor_ui(void)
         lv_obj_set_pos(wifi_labels[i], 230, 132 + i * 36);
     }
     update_wifi_diagnostics_locked();
-    const uint8_t brightness = brightness_preferences.getUChar("level", BRIGHTNESS_DEFAULT);
+    daytime_brightness = brightness_preferences.getUChar("level", BRIGHTNESS_DEFAULT);
+    if (daytime_brightness < BRIGHTNESS_MIN || daytime_brightness > BRIGHTNESS_MAX) {
+        daytime_brightness = BRIGHTNESS_DEFAULT;
+    }
+    night_enabled = brightness_preferences.getBool("night_on", true);
+    night_start = brightness_preferences.getUShort("night_start", 23 * 60);
+    night_end = brightness_preferences.getUShort("night_end", 7 * 60);
+    if (night_start >= 1440) night_start = 23 * 60;
+    if (night_end >= 1440) night_end = 7 * 60;
     brightness_label = lv_label_create(settings_page);
     lv_obj_set_style_text_color(brightness_label, lv_color_hex(0x475569), 0);
     lv_obj_set_style_text_font(brightness_label, &lv_font_montserrat_24, 0);
-    lv_obj_align(brightness_label, LV_ALIGN_TOP_MID, 0, 350);
+    lv_obj_align(brightness_label, LV_ALIGN_TOP_MID, 0, 286);
     lv_obj_t *brightness_slider = lv_slider_create(settings_page);
     lv_slider_set_range(brightness_slider, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
-    lv_slider_set_value(brightness_slider, brightness, LV_ANIM_OFF);
+    lv_slider_set_value(brightness_slider, daytime_brightness, LV_ANIM_OFF);
     lv_obj_set_width(brightness_slider, 540);
-    lv_obj_align(brightness_slider, LV_ALIGN_TOP_MID, 0, 400);
+    lv_obj_align(brightness_slider, LV_ALIGN_TOP_MID, 0, 330);
     lv_obj_add_event_cb(brightness_slider, brightness_slider_event, LV_EVENT_VALUE_CHANGED, nullptr);
-    if (board != nullptr && board->getBacklight() != nullptr) {
-        board->getBacklight()->setBrightness(brightness);
+
+    lv_obj_t *night_title = lv_label_create(settings_page);
+    lv_label_set_text(night_title, "Night dimming to 5%");
+    lv_obj_set_style_text_color(night_title, lv_color_hex(0x1E293B), 0);
+    lv_obj_set_style_text_font(night_title, &lv_font_montserrat_24, 0);
+    lv_obj_set_pos(night_title, 230, 365);
+    night_switch = lv_switch_create(settings_page);
+    lv_obj_set_pos(night_switch, 690, 365);
+    if (night_enabled) lv_obj_add_state(night_switch, LV_STATE_CHECKED);
+
+    const char *hours = "00\n01\n02\n03\n04\n05\n06\n07\n08\n09\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23";
+    const char *minutes = "00\n15\n30\n45";
+    const uint16_t times[] = {night_start, night_end};
+    for (uint8_t i = 0; i < 2; ++i) {
+        const int x = 230 + i * 300;
+        lv_obj_t *label = lv_label_create(settings_page);
+        lv_label_set_text(label, i == 0 ? "Start (HH:MM)" : "End (HH:MM)");
+        lv_obj_set_style_text_color(label, lv_color_hex(0x475569), 0);
+        lv_obj_set_style_text_font(label, &lv_font_montserrat_24, 0);
+        lv_obj_set_pos(label, x, 405);
+        night_time_rollers[i * 2] = create_time_roller(settings_page, hours, x, 440, times[i] / 60);
+        night_time_rollers[i * 2 + 1] = create_time_roller(settings_page, minutes, x + 110, 440, (times[i] % 60) / 15);
+        for (uint8_t j = 0; j < 2; ++j) {
+            lv_obj_set_height(night_time_rollers[i * 2 + j], 90);
+            lv_obj_add_event_cb(night_time_rollers[i * 2 + j], night_settings_event, LV_EVENT_VALUE_CHANGED, nullptr);
+        }
     }
-    lv_label_set_text_fmt(brightness_label, "Screen brightness: %u%%", brightness);
+    lv_obj_add_event_cb(night_switch, night_settings_event, LV_EVENT_VALUE_CHANGED, nullptr);
+    night_status_label = lv_label_create(settings_page);
+    lv_obj_set_style_text_color(night_status_label, lv_color_hex(0x475569), 0);
+    lv_obj_align(night_status_label, LV_ALIGN_TOP_MID, 0, 550);
+    update_display_brightness();
+    lv_timer_create([](lv_timer_t *) { update_display_brightness(); }, 1000, nullptr);
     lvgl_port_unlock();
 }
 static bool read_thermostat_state()
@@ -726,6 +813,7 @@ static bool read_home_assistant_state(const char *entity_id, String &state)
 static void sensor_task(void *)
 {
     WiFi.mode(WIFI_STA);
+    configTzTime(DISPLAY_TIMEZONE, "pool.ntp.org", "time.google.com");
     while (true) {
         if (!ensure_wifi_connected()) {
             if (lvgl_port_lock(-1)) {

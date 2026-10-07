@@ -25,6 +25,7 @@ flowchart LR
 - Schedule start/end times selectable in 15-minute steps.
 - Wi-Fi diagnostics showing connection state, SSID, signal strength, and IP address.
 - Screen brightness adjustable from 5 to 100%, retained across restarts.
+- Configurable night period that automatically reduces brightness to 5%.
 - Automatic Wi-Fi reconnection and ESP32-C6 recovery after repeated complete request failures.
 
 Sensor polling runs in a background FreeRTOS task, with a five-second delay between polling cycles. The actual interval also includes network request time.
@@ -57,9 +58,9 @@ Rear view of the display enclosure and its stand.
 
 ### Settings
 
-Wi-Fi connection diagnostics and the screen brightness slider.
+Wi-Fi connection diagnostics, daytime brightness, and configurable night dimming to 5% with start/end times. Enhanced photo of the running display.
 
-<img src="docs/images/settings.png" alt="Settings page displaying Wi-Fi diagnostics and screen brightness control" width="600">
+<img src="docs/images/settings.png" alt="Settings page displaying Wi-Fi diagnostics, daytime brightness, and night dimming controls with start and end times" width="600">
 
 ## Hardware and software
 
@@ -128,6 +129,10 @@ On the thermostat page, select an operating mode or adjust the manual setpoint. 
 Tap a schedule row to edit its temperature and start/end times, then choose **Save**. Each period ends when the next period starts; the Night period wraps back to Morning. Saving therefore sends two requests: one for the selected period and one to update the next period's start time. These requests are separate, so a failure can leave only one update applied. Subsequent polling displays the server's authoritative state.
 
 Use the settings page to inspect Wi-Fi diagnostics and adjust brightness. Brightness is saved locally using Arduino Preferences.
+
+**Night dimming** is enabled by default from **23:00 to 07:00**. On Settings, use the switch to enable or disable it and the Start/End rollers to choose times in 15-minute steps. Changes are saved automatically and retained across restarts. During this period, brightness stays at 5%; afterward, the saved daytime slider value is restored. Changing the slider during the night changes the brightness that will be restored in the daytime.
+
+The display synchronizes its clock using NTP (`pool.ntp.org` and `time.google.com`) and uses Rome local time, including automatic daylight-saving changes. After restarting, daytime brightness remains active until the clock synchronizes. Once synchronized, the clock continues running through a Wi-Fi outage. The interval includes its start and excludes its end; setting both times equal disables the interval. To use a different timezone, change `DISPLAY_TIMEZONE` in `src/main.cpp`.
 
 ## Thermostat API
 
